@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Péndulo Invertido — Simulador 1 GDL | UTEQ</title>
+<style>
+  :root {
+    --primary:    #4F8B2F;
+    --dark-green: #2D5016;
+    --gold:       #C9A961;
+    --gold-deep:  #A88845;
+    --soft-grey:  #F4F4F0;
+    --row-alt:    #EEF3E8;
+    --text:       #2c2c2c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f0f2ef;
+    color: var(--text);
+    line-height: 1.35;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary) 100%);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-bottom: 3px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  header h1 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  header .meta {
+    font-size: 0.72rem;
+    opacity: 0.88;
+    white-space: nowrap;
+  }
+
+  main {
+    flex: 1;
+    min-height: 0;
+    padding: 0.5rem;
+    display: grid;
+    grid-template-columns: 330px 1fr;
+    gap: 0.5rem;
+    overflow: hidden;
+  }
+  .panel {
+    background: white;
+    border-radius: 6px;
+    padding: 0.55rem 0.7rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .panel-title {
+    color: var(--dark-green);
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* Controles compactos */
+  .control-group { margin-bottom: 0.32rem; }
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: var(--dark-green);
+    font-size: 0.76rem;
+    margin-bottom: 1px;
+  }
+  .control-group label strong { font-weight: 700; }
+  .control-group .val {
+    background: var(--gold);
+    color: white;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-size: 0.7rem;
+    min-width: 84px;
+    text-align: center;
+  }
+  .control-group input[type=range] {
+    width: 100%;
+    accent-color: var(--primary);
+    cursor: pointer;
+    height: 14px;
+    margin: 0;
+  }
+  .hint {
+    font-size: 0.62rem;
+    color: #7a7a7a;
+    font-style: italic;
+    line-height: 1.15;
+    margin-top: 0;
+  }
+  .hint.coupled {
+    color: var(--gold-deep);
+    font-weight: 600;
+    font-style: normal;
+  }
+
+  /* Período destacado — compacto */
+  .period-highlight {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--dark-green) 100%);
+    color: white;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    margin-top: 0.4rem;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(45, 80, 22, 0.3);
+    border-top: 2px solid var(--gold);
+  }
+  .period-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.92;
+    font-weight: 600;
+  }
+  .period-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    margin-top: 1px;
+  }
+  .period-formula {
+    font-size: 0.66rem;
+    opacity: 0.86;
+    margin-top: 1px;
+    font-family: "JetBrains Mono", monospace;
+    line-height: 1.2;
+  }
+  .period-formula .sub {
+    font-size: 0.6rem;
+    opacity: 0.78;
+    display: block;
+    font-style: italic;
+    font-family: inherit;
+  }
+
+  /* Botones compactos */
+  .buttons {
+    display: flex;
+    gap: 0.3rem;
+    margin-top: 0.4rem;
+  }
+  .buttons button {
+    flex: 1;
+    padding: 0.35rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: white;
+  }
+  .btn-start  { background: var(--primary); }
+  .btn-start:hover { background: var(--dark-green); }
+  .btn-pause  { background: var(--gold); }
+  .btn-pause:hover { background: var(--gold-deep); }
+  .btn-reset  { background: #8B4513; }
+  .btn-reset:hover { background: #6B3410; }
+
+  /* Resultados en grid 2 columnas para ahorrar espacio vertical */
+  .results {
+    background: #fafffa;
+    border: 1px solid var(--primary);
+    border-radius: 5px;
+    padding: 0.35rem 0.55rem;
+    margin-top: 0.4rem;
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-size: 0.74rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 0.6rem;
+    row-gap: 1px;
+  }
+  .results .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0;
+  }
+  .results .row.full { grid-column: 1 / -1; }
+  .results .label { color: #555; }
+  .results .value {
+    color: var(--dark-green);
+    font-weight: bold;
+  }
+  .results .divider {
+    grid-column: 1 / -1;
+    border-top: 1px dashed #ccc;
+    margin: 2px 0;
+  }
+  .results .ei-row {
+    grid-column: 1 / -1;
+    background: rgba(201, 169, 97, 0.18);
+    border-radius: 3px;
+    padding: 2px 5px;
+  }
+
+  /* Visualización */
+  .visualization {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 0.6rem;
+  }
+  .canvas-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 0;
+    min-width: 0;
+  }
+  .canvas-wrap canvas {
+    background: #fdfdfd;
+    border: 1px solid #d0d0d0;
+    border-radius: 4px;
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+  }
+  #pendulumCanvas { width: 280px; }
+  #plotCanvas { width: 100%; }
+  .canvas-caption {
+    margin-top: 0.2rem;
+    font-size: 0.66rem;
+    color: #666;
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .status-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.66rem;
+    font-weight: 600;
+  }
+  .status-running { background: #d4edda; color: #155724; }
+  .status-paused  { background: #fff3cd; color: #856404; }
+  .status-stopped { background: #f8d7da; color: #721c24; }
+
+  /* Pantallas pequeñas: apilar */
+  @media (max-height: 600px) {
+    header { padding: 0.25rem 0.8rem; }
+    header h1 { font-size: 0.88rem; }
+    .panel-title { font-size: 0.78rem; margin-bottom: 0.3rem; }
+    .period-value { font-size: 1.05rem; }
+  }
+  @media (max-width: 880px) {
+    main { grid-template-columns: 1fr; }
+    .visualization { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Péndulo Invertido — Sistema de Un Grado de Libertad</h1>
+  <span class="meta">UTEQ · Estructura IV (ARQUI-605) · Ing. Gonzalo Zambrano Centeno, Mg.</span>
+</header>
+
+<main>
+  <!-- Panel de controles -->
+  <div class="panel">
+    <div class="panel-title">
+      Parámetros del sistema
+      <span class="status-badge status-stopped" id="statusBadge">Detenido</span>
+    </div>
+
+    <div class="control-group">
+      <label>Masa <strong>m</strong> <span class="val" id="mVal">10000 kg</span></label>
+      <input type="range" id="m" min="1000" max="50000" step="500" value="10000">
+    </div>
+    <div class="control-group">
+      <label>Rigidez lateral <strong>k</strong> <span class="val" id="kVal">1.00e+6 N/m</span></label>
+      <input type="range" id="k" min="0" max="1000" step="0.5" value="500">
+      <p class="hint">Modificar k = cambiar la sección transversal (E·I)</p>
+    </div>
+    <div class="control-group">
+      <label>Altura <strong>h</strong> <span class="val" id="hVal">3.0 m</span></label>
+      <input type="range" id="h" min="2" max="8" step="0.1" value="3">
+      <p class="hint coupled">k se reajusta para mantener E·I constante (k = 3·E·I/h³)</p>
+    </div>
+    <div class="control-group">
+      <label>Amortig. <strong>ζ</strong> <span class="val" id="zVal">0.050</span></label>
+      <input type="range" id="z" min="0" max="0.20" step="0.005" value="0.05">
+    </div>
+    <div class="control-group">
+      <label>Despl. inicial <strong>u₀</strong> <span class="val" id="u0Val">50 mm</span></label>
+      <input type="range" id="u0" min="0" max="200" step="5" value="50">
+    </div>
+
+    <!-- Período fundamental destacado -->
+    <div class="period-highlight">
+      <div class="period-label">Período fundamental</div>
+      <div class="period-value">T = <span id="TnBig">0.0000</span> s</div>
+      <div class="period-formula">
+        T = 2π·√(m/k)
+        <span class="sub">con k = 3·E·I/h³</span>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button class="btn-start" id="startBtn">▶ Iniciar</button>
+      <button class="btn-pause" id="pauseBtn">⏸ Pausar</button>
+      <button class="btn-reset" id="resetBtn">⟲ Reiniciar</button>
+    </div>
+
+    <div class="results">
+      <div class="row ei-row"><span class="label">E·I sección</span><span class="value" id="EI">--</span></div>
+      <div class="row"><span class="label">ω<sub>n</sub></span><span class="value" id="omegaN">--</span></div>
+      <div class="row"><span class="label">f<sub>n</sub></span><span class="value" id="fn">--</span></div>
+      <div class="row"><span class="label">ω<sub>d</sub></span><span class="value" id="omegaD">--</span></div>
+      <div class="row"><span class="label">t</span><span class="value" id="tNow">0.000</span></div>
+      <div class="divider"></div>
+      <div class="row full"><span class="label">u(t) actual</span><span class="value" id="uNow">+0.0 mm</span></div>
+    </div>
+  </div>
+
+  <!-- Panel de visualización -->
+  <div class="panel">
+    <div class="panel-title">Visualización dinámica</div>
+    <div class="visualization">
+      <div class="canvas-wrap">
+        <canvas id="pendulumCanvas" width="280" height="480"></canvas>
+        <p class="canvas-caption">Movimiento a escala real 1:1</p>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="plotCanvas" width="780" height="480"></canvas>
+        <p class="canvas-caption">Respuesta temporal u(t) sincronizada</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+// ===================== ESTADO ============================
+const slid = {
+  m:  document.getElementById('m'),
+  k:  document.getElementById('k'),
+  h:  document.getElementById('h'),
+  z:  document.getElementById('z'),
+  u0: document.getElementById('u0')
+};
+const disp = {
+  m:       document.getElementById('mVal'),
+  k:       document.getElementById('kVal'),
+  h:       document.getElementById('hVal'),
+  z:       document.getElementById('zVal'),
+  u0:      document.getElementById('u0Val'),
+  omegaN:  document.getElementById('omegaN'),
+  fn:      document.getElementById('fn'),
+  omegaD:  document.getElementById('omegaD'),
+  tNow:    document.getElementById('tNow'),
+  uNow:    document.getElementById('uNow'),
+  status:  document.getElementById('statusBadge'),
+  TnBig:   document.getElementById('TnBig'),
+  EI:      document.getElementById('EI')
+};
+
+const pCanvas    = document.getElementById('pendulumCanvas');
+const pCtx       = pCanvas.getContext('2d');
+const plotCanvas = document.getElementById('plotCanvas');
+const plotCtx    = plotCanvas.getContext('2d');
+
+let params = {};
+let dyn    = {};
+let t      = 0;
+let isRunning   = false;
+let lastFrame   = 0;
+let plotWindow  = 5;
+let storedEI    = null;
+
+// ===================== ESCALA LOG PARA k =================
+const K_MIN = 1e4, K_MAX = 1e8, K_SLIDER_MAX = 1000;
+function sliderPosToK(pos) {
+  const lo = Math.log10(K_MIN), hi = Math.log10(K_MAX);
+  return Math.pow(10, lo + (pos / K_SLIDER_MAX) * (hi - lo));
+}
+function kToSliderPos(k) {
+  const lo = Math.log10(K_MIN), hi = Math.log10(K_MAX);
+  const kc = Math.max(K_MIN, Math.min(K_MAX, k));
+  return ((Math.log10(kc) - lo) / (hi - lo)) * K_SLIDER_MAX;
+}
+
+// ===================== ESCALAS DINÁMICAS =================
+function massRadius(m) {
+  const f = (m - 1000) / (50000 - 1000);
+  return 0.020 + (0.120 - 0.020) * Math.max(0, Math.min(1, f));
+}
+function columnDiameter(k) {
+  return 0.03 + 0.04 * Math.log10(k / 1e4);
+}
+
+// ===================== FÍSICA =============================
+function readParams(source) {
+  params.m  = parseFloat(slid.m.value);
+  params.h  = parseFloat(slid.h.value);
+  params.z  = parseFloat(slid.z.value);
+  params.u0 = parseFloat(slid.u0.value) / 1000;
+
+  let kFromSlider = sliderPosToK(parseFloat(slid.k.value));
+
+  if (source === 'h' && storedEI !== null) {
+    let newK = 3 * storedEI / Math.pow(params.h, 3);
+    const clamped = Math.max(K_MIN, Math.min(K_MAX, newK));
+    params.k = clamped;
+    slid.k.value = kToSliderPos(clamped);
+    if (clamped !== newK) {
+      storedEI = clamped * Math.pow(params.h, 3) / 3;
+    }
+  } else {
+    params.k = kFromSlider;
+    storedEI = params.k * Math.pow(params.h, 3) / 3;
+  }
+
+  disp.m.textContent  = params.m.toFixed(0) + ' kg';
+  disp.k.textContent  = params.k.toExponential(2) + ' N/m';
+  disp.h.textContent  = params.h.toFixed(2) + ' m';
+  disp.z.textContent  = params.z.toFixed(3);
+  disp.u0.textContent = (params.u0 * 1000).toFixed(0) + ' mm';
+  disp.EI.textContent = storedEI.toExponential(2) + ' N·m²';
+
+  dyn.omegaN = Math.sqrt(params.k / params.m);
+  dyn.fn     = dyn.omegaN / (2 * Math.PI);
+  dyn.Tn     = 1 / dyn.fn;
+  dyn.omegaD = dyn.omegaN * Math.sqrt(1 - params.z * params.z);
+
+  dyn.A = params.u0;
+  dyn.B = (params.u0 === 0) ? 0 : (params.z * dyn.omegaN * params.u0) / dyn.omegaD;
+
+  disp.omegaN.textContent = dyn.omegaN.toFixed(3) + ' rad/s';
+  disp.fn.textContent     = dyn.fn.toFixed(3)     + ' Hz';
+  disp.omegaD.textContent = dyn.omegaD.toFixed(3) + ' rad/s';
+  disp.TnBig.textContent  = dyn.Tn.toFixed(4);
+
+  plotWindow = Math.min(Math.max(8 * dyn.Tn, 2.5), 25);
+}
+
+function u_at(time) {
+  if (params.u0 === 0) return 0;
+  const env = Math.exp(-params.z * dyn.omegaN * time);
+  return env * (dyn.A * Math.cos(dyn.omegaD * time) + dyn.B * Math.sin(dyn.omegaD * time));
+}
+
+// ===================== DIBUJO PÉNDULO ====================
+function drawPendulum(uNow) {
+  const W = pCanvas.width;
+  const H = pCanvas.height;
+  pCtx.clearRect(0, 0, W, H);
+
+  const topReserved = 42;
+
+  const massR  = massRadius(params.m);
+  const colDiam = columnDiameter(params.k);
+
+  const uMaxVisual     = Math.max(Math.abs(params.u0), 0.04);
+  const horizontalNeed = (uMaxVisual + massR + colDiam/2) * 2.4;
+  const verticalNeed   = params.h + massR + 0.4;
+  const ppmX = (W - 20) / horizontalNeed;
+  const ppmY = (H - topReserved - 45) / verticalNeed;
+  const ppm  = Math.min(ppmX, ppmY);
+
+  const ox = W / 2;
+  const oy = H - 30;
+  const X  = x => ox + x * ppm;
+  const Y  = y => oy - y * ppm;
+
+  // Suelo + rayado
+  pCtx.strokeStyle = '#333';
+  pCtx.lineWidth = 2.5;
+  pCtx.beginPath();
+  pCtx.moveTo(8, oy); pCtx.lineTo(W - 8, oy); pCtx.stroke();
+  pCtx.lineWidth = 1;
+  for (let xi = 14; xi < W - 14; xi += 14) {
+    pCtx.beginPath();
+    pCtx.moveTo(xi, oy + 10); pCtx.lineTo(xi + 7, oy);
+    pCtx.stroke();
+  }
+
+  // Referencia indeformada
+  pCtx.strokeStyle = '#b8b8b8';
+  pCtx.lineWidth = 1.5;
+  pCtx.setLineDash([5, 4]);
+  pCtx.beginPath();
+  pCtx.moveTo(X(0), Y(0)); pCtx.lineTo(X(0), Y(params.h));
+  pCtx.stroke();
+  pCtx.setLineDash([]);
+
+  // Columna deformada (polígono con espesor real)
+  const L = Math.sqrt(uNow*uNow + params.h*params.h);
+  const nx =  params.h / L;
+  const ny = -uNow / L;
+  const hw = colDiam / 2;
+  const c1 = [ 0    + nx*hw,  0       + ny*hw];
+  const c2 = [ uNow + nx*hw,  params.h + ny*hw];
+  const c3 = [ uNow - nx*hw,  params.h - ny*hw];
+  const c4 = [ 0    - nx*hw,  0       - ny*hw];
+
+  pCtx.fillStyle = '#4F8B2F';
+  pCtx.strokeStyle = '#2D5016';
+  pCtx.lineWidth = 1.2;
+  pCtx.beginPath();
+  pCtx.moveTo(X(c1[0]), Y(c1[1]));
+  pCtx.lineTo(X(c2[0]), Y(c2[1]));
+  pCtx.lineTo(X(c3[0]), Y(c3[1]));
+  pCtx.lineTo(X(c4[0]), Y(c4[1]));
+  pCtx.closePath();
+  pCtx.fill(); pCtx.stroke();
+
+  // Masa
+  pCtx.fillStyle = '#C9A961';
+  pCtx.strokeStyle = '#3a3a3a';
+  pCtx.lineWidth = 1.5;
+  pCtx.beginPath();
+  pCtx.arc(X(uNow), Y(params.h), massR * ppm, 0, 2 * Math.PI);
+  pCtx.fill(); pCtx.stroke();
+  pCtx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+  pCtx.beginPath();
+  pCtx.arc(X(uNow) - massR*ppm*0.3, Y(params.h) - massR*ppm*0.3,
+           massR * ppm * 0.35, 0, 2 * Math.PI);
+  pCtx.fill();
+
+  // Texto u(t) siempre visible arriba
+  pCtx.fillStyle = 'rgba(45, 80, 22, 0.92)';
+  pCtx.fillRect(0, 0, W, 34);
+  pCtx.strokeStyle = '#C9A961';
+  pCtx.lineWidth = 2;
+  pCtx.beginPath();
+  pCtx.moveTo(0, 34); pCtx.lineTo(W, 34); pCtx.stroke();
+  pCtx.fillStyle = '#ffffff';
+  pCtx.font = 'bold 15px "JetBrains Mono", "Courier New", monospace';
+  pCtx.textAlign = 'center';
+  pCtx.textBaseline = 'middle';
+  const sign = uNow >= 0 ? '+' : '−';
+  const uMm  = Math.abs(uNow * 1000);
+  pCtx.fillText(`u(t) = ${sign}${uMm.toFixed(2)} mm`, W / 2, 17);
+
+  // Aviso cuando u0 = 0
+  if (params.u0 === 0) {
+    pCtx.fillStyle = 'rgba(192, 57, 43, 0.94)';
+    const bw = 230, bh = 50;
+    const bx = (W - bw) / 2, by = (H - bh) / 2;
+    pCtx.fillRect(bx, by, bw, bh);
+    pCtx.strokeStyle = '#7d1d12';
+    pCtx.lineWidth = 2;
+    pCtx.strokeRect(bx, by, bw, bh);
+    pCtx.fillStyle = '#ffffff';
+    pCtx.font = 'bold 11px sans-serif';
+    pCtx.textAlign = 'center';
+    pCtx.textBaseline = 'middle';
+    pCtx.fillText('Asigne u₀ > 0 para ver', W/2, by + 17);
+    pCtx.fillText('la vibración', W/2, by + 33);
+  }
+
+  // Cota inferior
+  pCtx.fillStyle = '#666';
+  pCtx.font = '9px sans-serif';
+  pCtx.textAlign = 'left';
+  pCtx.textBaseline = 'bottom';
+  pCtx.fillText(`1 m = ${ppm.toFixed(0)} px`, 6, H - 4);
+  pCtx.textAlign = 'right';
+  pCtx.fillText(`h = ${params.h.toFixed(2)} m`, W - 6, H - 4);
+}
+
+// ===================== DIBUJO PLOT u(t) ==================
+function drawPlot() {
+  const W = plotCanvas.width;
+  const H = plotCanvas.height;
+  plotCtx.clearRect(0, 0, W, H);
+
+  const mar = { top: 24, right: 18, bottom: 38, left: 55 };
+  const pW = W - mar.left - mar.right;
+  const pH = H - mar.top  - mar.bottom;
+
+  const tEnd = plotWindow;
+  const uAmpMm = Math.max(params.u0 * 1000, 5);
+  const uMax = uAmpMm * 1.25;
+
+  const xPx = time => mar.left + (time / tEnd) * pW;
+  const yPx = u    => mar.top + pH/2 - (u / uMax) * (pH/2);
+
+  plotCtx.fillStyle = '#fafafa';
+  plotCtx.fillRect(mar.left, mar.top, pW, pH);
+
+  let tStep, uStep;
+  if (tEnd <= 3) tStep = 0.25;
+  else if (tEnd <= 6) tStep = 0.5;
+  else if (tEnd <= 12) tStep = 1;
+  else if (tEnd <= 20) tStep = 2;
+  else tStep = 5;
+  if (uMax <= 15) uStep = 5;
+  else if (uMax <= 40) uStep = 10;
+  else if (uMax <= 100) uStep = 25;
+  else uStep = 50;
+
+  plotCtx.strokeStyle = '#e6e6e6';
+  plotCtx.lineWidth = 0.5;
+  plotCtx.beginPath();
+  for (let tt = 0; tt <= tEnd + 1e-6; tt += tStep) {
+    plotCtx.moveTo(xPx(tt), mar.top);
+    plotCtx.lineTo(xPx(tt), mar.top + pH);
+  }
+  const uTickMax = Math.ceil(uMax / uStep) * uStep;
+  for (let uu = -uTickMax; uu <= uTickMax; uu += uStep) {
+    plotCtx.moveTo(mar.left, yPx(uu));
+    plotCtx.lineTo(mar.left + pW, yPx(uu));
+  }
+  plotCtx.stroke();
+
+  plotCtx.strokeStyle = '#999';
+  plotCtx.lineWidth = 1;
+  plotCtx.beginPath();
+  plotCtx.moveTo(mar.left, yPx(0));
+  plotCtx.lineTo(mar.left + pW, yPx(0));
+  plotCtx.stroke();
+
+  if (params.u0 > 0) {
+    plotCtx.strokeStyle = '#C9A961';
+    plotCtx.lineWidth = 1.2;
+    plotCtx.setLineDash([5, 4]);
+    for (const sign of [1, -1]) {
+      plotCtx.beginPath();
+      let first = true;
+      for (let tt = 0; tt <= tEnd; tt += tEnd / 300) {
+        const env = sign * params.u0 * 1000 * Math.exp(-params.z * dyn.omegaN * tt);
+        const x = xPx(tt), y = yPx(env);
+        if (first) { plotCtx.moveTo(x, y); first = false; }
+        else        plotCtx.lineTo(x, y);
+      }
+      plotCtx.stroke();
+    }
+    plotCtx.setLineDash([]);
+  }
+
+  plotCtx.strokeStyle = '#4F8B2F';
+  plotCtx.lineWidth = 2;
+  plotCtx.beginPath();
+  let first = true;
+  const dtPlot = tEnd / 500;
+  for (let tt = 0; tt <= t; tt += dtPlot) {
+    const x = xPx(tt);
+    const y = yPx(u_at(tt) * 1000);
+    if (first) { plotCtx.moveTo(x, y); first = false; }
+    else        plotCtx.lineTo(x, y);
+  }
+  plotCtx.stroke();
+
+  if (t > 0) {
+    const uNowMm = u_at(t) * 1000;
+    plotCtx.strokeStyle = 'rgba(192, 57, 43, 0.4)';
+    plotCtx.lineWidth = 1;
+    plotCtx.beginPath();
+    plotCtx.moveTo(xPx(t), mar.top);
+    plotCtx.lineTo(xPx(t), mar.top + pH);
+    plotCtx.stroke();
+    plotCtx.fillStyle = '#c0392b';
+    plotCtx.strokeStyle = '#7d1d12';
+    plotCtx.lineWidth = 1.5;
+    plotCtx.beginPath();
+    plotCtx.arc(xPx(t), yPx(uNowMm), 5.5, 0, 2 * Math.PI);
+    plotCtx.fill(); plotCtx.stroke();
+  }
+
+  if (dyn.Tn < tEnd && params.u0 > 0) {
+    plotCtx.strokeStyle = 'rgba(45, 80, 22, 0.4)';
+    plotCtx.lineWidth = 1;
+    plotCtx.setLineDash([2, 3]);
+    plotCtx.beginPath();
+    plotCtx.moveTo(xPx(dyn.Tn), mar.top);
+    plotCtx.lineTo(xPx(dyn.Tn), mar.top + pH);
+    plotCtx.stroke();
+    plotCtx.setLineDash([]);
+    plotCtx.fillStyle = '#2D5016';
+    plotCtx.font = 'bold 10px sans-serif';
+    plotCtx.textAlign = 'center';
+    plotCtx.fillText('T', xPx(dyn.Tn), mar.top - 4);
+  }
+
+  plotCtx.strokeStyle = '#333';
+  plotCtx.lineWidth = 1.5;
+  plotCtx.beginPath();
+  plotCtx.moveTo(mar.left, mar.top);
+  plotCtx.lineTo(mar.left, mar.top + pH);
+  plotCtx.lineTo(mar.left + pW, mar.top + pH);
+  plotCtx.stroke();
+
+  plotCtx.fillStyle = '#222';
+  plotCtx.font = 'bold 11px sans-serif';
+  plotCtx.textAlign = 'center';
+  plotCtx.fillText('Tiempo t [s]', mar.left + pW/2, H - 10);
+  plotCtx.save();
+  plotCtx.translate(15, mar.top + pH/2);
+  plotCtx.rotate(-Math.PI/2);
+  plotCtx.fillText('u(t) [mm]', 0, 0);
+  plotCtx.restore();
+
+  plotCtx.font = '9px sans-serif';
+  plotCtx.fillStyle = '#555';
+  plotCtx.textAlign = 'center';
+  plotCtx.textBaseline = 'top';
+  for (let tt = 0; tt <= tEnd + 1e-6; tt += tStep) {
+    plotCtx.fillText(tt.toFixed(tStep < 1 ? 2 : 1), xPx(tt), mar.top + pH + 4);
+  }
+  plotCtx.textAlign = 'right';
+  plotCtx.textBaseline = 'middle';
+  for (let uu = -uTickMax; uu <= uTickMax; uu += uStep) {
+    if (Math.abs(uu) <= uMax * 1.05) {
+      plotCtx.fillText(uu.toFixed(0), mar.left - 5, yPx(uu));
+    }
+  }
+
+  plotCtx.fillStyle = '#2D5016';
+  plotCtx.font = 'bold 11px sans-serif';
+  plotCtx.textAlign = 'left';
+  plotCtx.textBaseline = 'top';
+  plotCtx.fillText('Respuesta libre amortiguada  u(t)', mar.left + 4, 6);
+}
+
+// ===================== BUCLE DE ANIMACIÓN ================
+function animate(timestamp) {
+  if (!isRunning) return;
+  if (lastFrame === 0) lastFrame = timestamp;
+  const dt = (timestamp - lastFrame) / 1000;
+  lastFrame = timestamp;
+
+  t += dt;
+  if (t > plotWindow) {
+    t = plotWindow;
+    isRunning = false;
+    setStatus('stopped', 'Finalizado');
+  }
+
+  const uNow = u_at(t);
+  disp.tNow.textContent = t.toFixed(3);
+  disp.uNow.textContent = (uNow*1000 >= 0 ? '+' : '') + (uNow*1000).toFixed(2) + ' mm';
+
+  drawPendulum(uNow);
+  drawPlot();
+
+  if (isRunning) requestAnimationFrame(animate);
+}
+
+function setStatus(kind, text) {
+  disp.status.classList.remove('status-running','status-paused','status-stopped');
+  disp.status.classList.add('status-' + kind);
+  disp.status.textContent = text;
+}
+
+function reset() {
+  isRunning = false;
+  t = 0;
+  lastFrame = 0;
+  storedEI = null;
+  readParams('reset');
+  drawPendulum(params.u0);
+  drawPlot();
+  disp.tNow.textContent = '0.000';
+  disp.uNow.textContent = '+' + (params.u0*1000).toFixed(2) + ' mm';
+  setStatus('stopped', 'Detenido');
+}
+
+function start() {
+  if (!isRunning) {
+    if (t >= plotWindow) reset();
+    isRunning = true;
+    lastFrame = 0;
+    setStatus('running', '▶ Reproduciendo');
+    requestAnimationFrame(animate);
+  }
+}
+
+function pause() {
+  if (isRunning) {
+    isRunning = false;
+    setStatus('paused', '⏸ Pausado');
+  }
+}
+
+// ===================== EVENTOS ============================
+function handleChange(source) {
+  pause();
+  readParams(source);
+  t = 0;
+  drawPendulum(params.u0);
+  drawPlot();
+  disp.tNow.textContent = '0.000';
+  disp.uNow.textContent = '+' + (params.u0*1000).toFixed(2) + ' mm';
+  setStatus('stopped', 'Detenido');
+}
+
+slid.m.addEventListener('input',  () => handleChange('m'));
+slid.k.addEventListener('input',  () => handleChange('k'));
+slid.h.addEventListener('input',  () => handleChange('h'));
+slid.z.addEventListener('input',  () => handleChange('z'));
+slid.u0.addEventListener('input', () => handleChange('u0'));
+
+document.getElementById('startBtn').addEventListener('click', start);
+document.getElementById('pauseBtn').addEventListener('click', pause);
+document.getElementById('resetBtn').addEventListener('click', reset);
+
+reset();
+</script>
+</body>
+</html>
